@@ -48,34 +48,54 @@ public class Controller : MonoBehaviour
 
     public void InitAdjacencyLists()
     {
-        void InitAdjacencyLists()
+        // Matriz de adyacencia
+        int[,] matriu = new int[Constants.NumTiles, Constants.NumTiles];
+
+        // 1️⃣ Inicializar a 0
+        for (int i = 0; i < Constants.NumTiles; i++)
         {
-            for (int i = 0; i < tiles.Length; i++)
+            for (int j = 0; j < Constants.NumTiles; j++)
             {
-                int row = i / 8;
-                int col = i % 8;
-
-                // Arriba
-                if (row > 0)
-                    tiles[i].adjacency.Add(i - 8);
-
-                // Abajo
-                if (row < 7)
-                    tiles[i].adjacency.Add(i + 8);
-
-                // Izquierda
-                if (col > 0)
-                    tiles[i].adjacency.Add(i - 1);
-
-                // Derecha
-                if (col < 7)
-                    tiles[i].adjacency.Add(i + 1);
+                matriu[i, j] = 0;
             }
         }
 
+        // 2️⃣ Rellenar adyacencias (arriba, abajo, izquierda, derecha)
+        for (int i = 0; i < Constants.NumTiles; i++)
+        {
+            int row = i / 8;
+            int col = i % 8;
+
+            // Arriba
+            if (row > 0)
+                matriu[i, i - 8] = 1;
+
+            // Abajo
+            if (row < 7)
+                matriu[i, i + 8] = 1;
+
+            // Izquierda
+            if (col > 0)
+                matriu[i, i - 1] = 1;
+
+            // Derecha
+            if (col < 7)
+                matriu[i, i + 1] = 1;
+        }
+
+        // 3️ Pasar matriz a listas de adyacencia
+        for (int i = 0; i < Constants.NumTiles; i++)
+        {
+            for (int j = 0; j < Constants.NumTiles; j++)
+            {
+                if (matriu[i, j] == 1)
+                {
+                    tiles[i].adjacency.Add(j);
+                }
+            }
+        }
     }
 
-    //Reseteamos cada casilla: color, padre, distancia y visitada
     public void ResetTiles()
     {        
         foreach (Tile tile in tiles)
@@ -218,12 +238,56 @@ public class Controller : MonoBehaviour
         //Cola para el BFS
         Queue<Tile> nodes = new Queue<Tile>();
 
-        //TODO: Implementar BFS. Los nodos seleccionables los ponemos como selectable=true
-        //Tendrás que cambiar este código por el BFS
-        for(int i = 0; i < Constants.NumTiles; i++)
+        // Inicializamos
+        tiles[indexcurrentTile].visited = true;
+        tiles[indexcurrentTile].distance = 0;
+
+        nodes.Enqueue(tiles[indexcurrentTile]);
+
+        while (nodes.Count > 0)
         {
-            tiles[i].selectable = true;
+            Tile current = nodes.Dequeue();
+
+            foreach (int adjIndex in current.adjacency)
+            {
+                Tile neighbor = tiles[adjIndex];
+
+                //  Evitar pasar por el otro policía (solo si es turno de policía)
+                bool blocked = false;
+                if (cop)
+                {
+                    for (int i = 0; i < cops.Length; i++)
+                    {
+                        int copTile = cops[i].GetComponent<CopMove>().currentTile;
+
+                        if (copTile == adjIndex && adjIndex != indexcurrentTile)
+                        {
+                            blocked = true;
+                        }
+                    }
+                }
+
+                if (!neighbor.visited && !blocked)
+                {
+                    neighbor.visited = true;
+                    neighbor.parent = current;
+                    neighbor.distance = current.distance + 1;
+
+                    //  Solo hasta distancia 2
+                    if (neighbor.distance <= 2)
+                    {
+                        neighbor.selectable = true;
+                    }
+
+                    //  No seguimos más allá de 2
+                    if (neighbor.distance < 2)
+                    {
+                        nodes.Enqueue(neighbor);
+                    }
+                }
+            }
         }
+    }
 
 
     }
@@ -236,4 +300,4 @@ public class Controller : MonoBehaviour
    
 
        
-}
+
