@@ -172,34 +172,44 @@ public class Controller : MonoBehaviour
 
     public void RobberTurn()
     {
+        List<Tile> posibles = new List<Tile>();
 
+        // Obtener casillas alcanzables
+        FindSelectableTiles(false);
+
+        for (int i = 0; i < tiles.Length; i++)
         {
-            // Lista de posibles casillas a las que puede moverse
-            List<Tile> posibles = new List<Tile>();
-
-            // Calculamos casillas alcanzables desde la posición del ladrón
-            FindSelectableTiles(false);
-
-            // Recorremos todas las casillas
-            for (int i = 0; i < tiles.Length; i++)
+            if (tiles[i].selectable)
             {
-                // Si es alcanzable, la guardamos
-                if (tiles[i].selectable)
+                posibles.Add(tiles[i]);
+            }
+        }
+
+        if (posibles.Count > 0)
+        {
+            Tile mejorTile = posibles[0];
+            int mejorDistancia = -1;
+
+            // Posiciones de los policías
+            int cop1 = cops[0].GetComponent<CopMove>().currentTile;
+            int cop2 = cops[1].GetComponent<CopMove>().currentTile;
+
+            foreach (Tile t in posibles)
+            {
+                int dist1 = Mathf.Abs(t.numTile / 8 - cop1 / 8) + Mathf.Abs(t.numTile % 8 - cop1 % 8);
+                int dist2 = Mathf.Abs(t.numTile / 8 - cop2 / 8) + Mathf.Abs(t.numTile % 8 - cop2 % 8);
+
+                int minDist = Mathf.Min(dist1, dist2);
+
+                // Queremos maximizar la distancia mínima
+                if (minDist > mejorDistancia)
                 {
-                    posibles.Add(tiles[i]);
+                    mejorDistancia = minDist;
+                    mejorTile = t;
                 }
             }
 
-            // Si hay casillas disponibles
-            if (posibles.Count > 0)
-            {
-                // Elegimos una aleatoria
-                int randomIndex = Random.Range(0, posibles.Count);
-                Tile destino = posibles[randomIndex];
-
-                // Movemos el ladrón a esa casilla
-                robber.GetComponent<RobberMove>().MoveToTile(destino);
-            }
+            robber.GetComponent<RobberMove>().MoveToTile(mejorTile);
         }
     }
 
